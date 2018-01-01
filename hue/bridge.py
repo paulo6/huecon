@@ -5,6 +5,8 @@
 #
 import qhue
 import requests
+import cachetools
+import operator
 
 from .error import *
 from .light import Light
@@ -20,6 +22,9 @@ _CONNECT_URL = "http://{address}/api/{username}"
 
 # default timeout in seconds
 _DEFAULT_TIMEOUT = 5
+
+# Cache timeout
+_CACHE_TIMEOUT = 2
 
 
 class _Resource(qhue.qhue.Resource):
@@ -51,6 +56,8 @@ class Bridge:
         self.name = self._get_basic_config(address)['name']
         self._bridge = None
 
+        self._cache = cachetools.TTLCache(10, _CACHE_TIMEOUT)
+
     def _get_basic_config(self, address):
         return _Resource(_BASIC_CONFIG_URL.format(address=address),
                          self.timeout)()
@@ -68,12 +75,17 @@ class Bridge:
                                  self.timeout)
 
         # Execute a get on the bridge to check username is ok!
-        self._bridge()
+        self._bridge.config()
 
-    def get_lights(self):
+    @cachetools.cachedmethod(operator.attrgetter('_cache'))
+    def get_lights(self, sort_by_name=True):
         if self._bridge is None:
             raise BridgeError("Not connected to bridge")
 
-        return [Light(id, self._bridge.lights[id], data)
-                for id, data in self._bridge.lights().items()]
+        lights =  [Light(id, self._bridge.lights[id], data)
+                   for id, data in self._bridge.lights().items()]
+        if sort_by_name:
+            lights = sorted(lights, key=lambda l: l.name)
+        return lights
+
 

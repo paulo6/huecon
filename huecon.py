@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # huecon.py
 #
@@ -6,13 +7,23 @@
 
 import os
 import sys
-import cmd
 
 import config
 import hue
+import cli
 
 # Config file location
 CONFIG_FILE = os.path.expanduser("~/.huecon")
+
+CLI_DEF = {
+    "show:Show various Hue system info": {
+        "lights:Show the lights": {
+            "None:Show summary": "show_lights",
+            "detail:Show detail": "show_lights_detail",
+        },
+    },
+    "exit:Exit Huecon": "do_exit",
+}
 
 
 def exit_error(message):
@@ -20,7 +31,7 @@ def exit_error(message):
     sys.exit(1)
 
 
-class HueCon(cmd.Cmd):
+class HueCon(cli.Interface):
     intro = 'Welcome HueCon.   Type help or ? to list commands.\n'
     prompt = '(huecon) '
 
@@ -31,13 +42,13 @@ class HueCon(cmd.Cmd):
         # Connect to bridge
         self.bridge = self._connect_to_bridge()
 
-        super().__init__()
+        super().__init__(CLI_DEF)
 
     def _connect_to_bridge(self):
         # Get known bridges
         known_bridges = {a: u for a, u in self.config_file.get_bridges()}
 
-        address = input("Enter hue bridge address: ")
+        address = input("Enter hue bridge host: ")
 
         # Create a bridge
         try:
@@ -68,22 +79,35 @@ class HueCon(cmd.Cmd):
 
         return bridge
 
-    def do_show(self, arg):
-        """Show various information. Supported options: lights, """
-        if arg == "lights":
-            print("Lights:")
-            for light in sorted(self.bridge.get_lights(), key=lambda l: l.name):
-                print("  {} ({})".format(light.name,
-                                         "on" if light.is_on else "off"))
-        else:
-            print("Unknown option", arg)
+    def show_lights(self, ctx):
+        print("Lights:")
+        for light in self.bridge.get_lights():
+            if not light.is_reachable:
+                state = "??"
+            elif light.is_on:
+                state = "on"
+            else:
+                state = "off"
+            print("  {} ({})".format(light.name, state))
 
-    def do_exit(self, arg):
-        """Exit huecon"""
+    def show_lights_detail(self, ctx):
+        print("Detailed lights info")
+        for light in self.bridge.get_lights():
+            print("")
+            print(light.name)
+            print("  ID:", light.id)
+            print("  Reachable:", light.is_reachable)
+            print("  On:", light.is_on)
+            print("  Brightness:", light.state.bri)
+            print("  Hue:", light.state.hue)
+            print("  Saturation:", light.state.sat)
+            print("  Effect:", light.state.effect)
+
+    def do_exit(self, ctx):
         print("Bye!")
-        return False
+        ctx.end = True
 
 
 if __name__ == '__main__':
-    HueCon().cmdloop()
+    HueCon()
 
