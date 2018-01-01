@@ -22,6 +22,20 @@ CLI_DEF = {
             "detail:Show detail": "show_lights_detail",
         },
     },
+    "light:Perform actions for a light": {
+        "id:Perform action for this light id": {
+            "<light-id>:The light id": {
+                "on:Turn light on": "light_on",
+                "off:Turn light off": "light_off",
+            },
+        },
+        "name:Perform action for this light name": {
+            "<light-name>:The light name": {
+                "on:Turn light on": "light_on",
+                "off:Turn light off": "light_off",
+            },
+        },
+    },
     "exit:Exit Huecon": "do_exit",
 }
 
@@ -29,6 +43,62 @@ CLI_DEF = {
 def exit_error(message):
     print(message)
     sys.exit(1)
+
+
+class LightIDArg(cli.ArgumentDef):
+    def __init__(self, bridge):
+        self.bridge = bridge
+        super().__init__("light-id")
+
+    def complete(self, ctx, arg):
+        return [l.id for l in self.bridge.get_lights()
+                if l.id.startswith(arg)]
+
+    def process(self, ctx, arg):
+        # Find the light!
+        lights = {l.id: l for l in self.bridge.get_lights()}
+        try:
+            return lights[arg]
+        except KeyError as exc:
+            raise cli.ArgumentError("Unknown light ID") from exc
+
+    def help_options(self, ctx):
+        return [(l.id, l.name) for l in self.bridge.get_lights()]
+
+
+class LightNameArg(cli.ArgumentDef):
+    def __init__(self, bridge):
+        self.bridge = bridge
+        super().__init__("light-name")
+
+    def splitline(self, ctx, arg):
+        # If there are quotes, then walk till we find last
+        if arg and arg[0] == '"':
+            if '" ' not in arg[1:]:
+                return (arg, None)
+            else:
+                end = arg[1:].index('" ')
+                return arg[:end + 2], arg[end + 2:].lstrip()
+        else:
+            return super().splitline(ctx, arg)
+
+    def complete(self, ctx, arg):
+        return ['"{}"'.format(l.name)
+                for l in self.bridge.get_lights()
+                if '"{}"'.format(l.name).startswith(arg)]
+
+    def process(self, ctx, arg):
+        # Find the light!
+        lights = {l.name: l for l in self.bridge.get_lights()}
+
+        # Strip quotes
+        if len(arg) > 1 and arg[0] == '"' and arg[-1] == '"':
+            arg = arg[1:-1]
+
+        try:
+            return lights[arg]
+        except KeyError as exc:
+            raise cli.ArgumentError("Unknown light name", arg) from exc
 
 
 class HueCon(cli.Interface):
@@ -42,7 +112,13 @@ class HueCon(cli.Interface):
         # Connect to bridge
         self.bridge = self._connect_to_bridge()
 
-        super().__init__(CLI_DEF)
+        arg_defs = {
+            "<light-id>": LightIDArg(self.bridge),
+            "<light-name>": LightNameArg(self.bridge),
+        }
+
+        super().__init__(CLI_DEF,
+                         arg_defs)
 
     def _connect_to_bridge(self):
         # Get known bridges
@@ -104,6 +180,20 @@ class HueCon(cli.Interface):
             print("  Hue:", light.state.hue)
             print("  Saturation:", light.state.sat)
             print("  Effect:", light.state.effect)
+
+    def light_on(self, ctx):
+        light = ctx.args.get("light-id", None)
+        if light is None:
+            light = ctx.args["light-name"]
+        print("Turning light '{}' on".format(light.name))
+        light.turn_on()
+
+    def light_off(self, ctx):
+        light = ctx.args.get("light-id", None)
+        if light is None:
+            light = ctx.args["light-name"]
+        print("Turning light '{}' off".format(light.name))
+        light.turn_off()
 
     def do_exit(self, ctx):
         print("Bye!")

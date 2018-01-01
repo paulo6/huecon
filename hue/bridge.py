@@ -79,7 +79,7 @@ class Bridge:
     def connect(self, username):
         self._resource = _Resource(_CONNECT_URL.format(address=self.address,
                                                        username=username),
-                                 self.timeout)
+                                   self.timeout)
 
         # Execute a get on the bridge to check username is ok!
         self._resource.config()
@@ -89,8 +89,8 @@ class Bridge:
         if self._resource is None:
             raise BridgeError("Not connected to bridge")
 
-        lights =  [Light(id, self._resource.lights[id], data)
-                   for id, data in self._resource.lights().items()]
+        lights = [Light(id, self._resource.lights[id], data)
+                  for id, data in self._resource.lights().items()]
         if sort_by_name:
             lights = sorted(lights, key=lambda l: l.name)
         return lights

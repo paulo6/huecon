@@ -36,3 +36,11 @@ class Light:
 
     def refresh(self):
         self._data = self._resource()
+
+    def turn_on(self):
+        self._resource.state(on=True)
+        self.refresh()
+
+    def turn_off(self):
+        self._resource.state(on=False)
+        self.refresh()
