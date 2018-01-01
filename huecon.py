@@ -75,7 +75,7 @@ class LightNameArg(cli.ArgumentDef):
         # If there are quotes, then walk till we find last
         if arg and arg[0] == '"':
             if '" ' not in arg[1:]:
-                return (arg, None)
+                return arg, None
             else:
                 end = arg[1:].index('" ')
                 return arg[:end + 2], arg[end + 2:].lstrip()
@@ -122,7 +122,8 @@ class HueCon(cli.Interface):
 
     def _connect_to_bridge(self):
         # Get known bridges
-        known_bridges = {id: user for id, user in self.config_file.get_bridges()}
+        known_bridges = {bid: user
+                         for bid, user in self.config_file.get_bridges()}
 
         address = input("Enter hue bridge host: ")
 

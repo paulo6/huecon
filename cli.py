@@ -62,8 +62,8 @@ class Interface:
     def _parse_cli(self, cli_def, arg_defs):
         def process(parent_name, helpstr, contents):
             if (isinstance(contents, dict) and
-                len(contents) == 1 and
-                list(contents.keys())[0].startswith("<")):
+                    len(contents) == 1 and
+                    list(contents.keys())[0].startswith("<")):
 
                 key, value = list(contents.items())[0]
                 if ":" not in key:
@@ -140,7 +140,7 @@ class ArgumentDef:
         if line and " " in line:
             return line.split(" ", 1)
         else:
-            return (line, None)
+            return line, None
 
     def process(self, ctx, arg):
         """
@@ -211,7 +211,7 @@ class _Cmd(pycmd.Cmd):
                 return self.cli_list.complete(ctx, line[5:])
             else:
                 return self.cli_list.complete(ctx, line)
-        except Exception as exc:
+        except Exception:
             print("Completion error!!")
             traceback.print_exc()
 
@@ -275,7 +275,7 @@ class _CLIList(_CLIBase):
             return [None]
         else:
             return [c for c in self._elems
-                      if c is not None and c.startswith(text)]
+                    if c is not None and c.startswith(text)]
 
     def execute(self, ctx, line):
         if line is None:
@@ -400,8 +400,8 @@ class _CLIArgument(_CLIBase):
             print("\nOptions:")
             if isinstance(options[0], tuple):
                 maxlen = max(len(v) for v, _ in options)
-                for value, help in options:
-                    print("  {:{}} - {}".format(value, maxlen, help))
+                for value, helpstr in options:
+                    print("  {:{}} - {}".format(value, maxlen, helpstr))
             else:
                 ctx.base.columnize(options)
 

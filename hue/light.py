@@ -8,9 +8,10 @@ from collections import namedtuple
 
 State = namedtuple("State", ["on", "bri", "hue", "sat", "effect"])
 
+
 class Light:
-    def __init__(self, id, resource, data):
-        self.id = id
+    def __init__(self, light_id, resource, data):
+        self.id = light_id
         self._resource = resource
         self._data = data
 

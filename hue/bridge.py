@@ -89,8 +89,8 @@ class Bridge:
         if self._resource is None:
             raise BridgeError("Not connected to bridge")
 
-        lights = [Light(id, self._resource.lights[id], data)
-                  for id, data in self._resource.lights().items()]
+        lights = [Light(i, self._resource.lights[i], data)
+                  for i, data in self._resource.lights().items()]
         if sort_by_name:
             lights = sorted(lights, key=lambda l: l.name)
         return lights

@@ -7,6 +7,7 @@
 import json
 import enum
 
+
 class Error(Exception):
     """Base exception for this module."""
 
@@ -44,13 +45,13 @@ class Config:
             yield (bridge[_BridgeField.ID.value],
                    bridge[_BridgeField.USERNAME.value])
 
-    def add_bridge(self, id, username):
+    def add_bridge(self, bridgeid, username):
         """Add a bridge to the config file."""
         if _ConfigField.BRIDGES.value not in self._data:
             self._data[_ConfigField.BRIDGES.value] = []
 
         self._data[_ConfigField.BRIDGES.value].append(
-            {_BridgeField.ID.value: id,
+            {_BridgeField.ID.value: bridgeid,
              _BridgeField.USERNAME.value: username})
 
     def write_file(self):
@@ -58,7 +59,8 @@ class Config:
         with open(self._filename, mode="w") as f:
             json.dump(self._data, f, indent=2, sort_keys=True)
 
-    def _read_file(self, filename):
+    @staticmethod
+    def _read_file(filename):
         """Private helper for reading and validating a config file."""
         with open(filename, mode="r") as f:
             data = json.load(f)
@@ -86,7 +88,6 @@ class Config:
                             "Bridge index {} has unexpected field '{}'"
                             .format(idx, key))
         return data
-
 
 
 class _ConfigField(enum.Enum):
