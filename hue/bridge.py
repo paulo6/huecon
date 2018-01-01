@@ -53,10 +53,17 @@ class Bridge:
     def __init__(self, address, timeout=_DEFAULT_TIMEOUT):
         self.address = address
         self.timeout = timeout
-        self.name = self._get_basic_config(address)['name']
-        self._bridge = None
+        self.name = None
+        self.id = None
 
+        # The bridge resource
+        self._resource = None
         self._cache = cachetools.TTLCache(10, _CACHE_TIMEOUT)
+
+        # Validate bridge address and get name and id
+        config = self._get_basic_config(address)
+        self.name = config['name']
+        self.id = config['bridgeid']
 
     def _get_basic_config(self, address):
         return _Resource(_BASIC_CONFIG_URL.format(address=address),
@@ -70,20 +77,20 @@ class Bridge:
         return response[0]["success"]["username"]
 
     def connect(self, username):
-        self._bridge = _Resource(_CONNECT_URL.format(address=self.address,
-                                                     username=username),
+        self._resource = _Resource(_CONNECT_URL.format(address=self.address,
+                                                       username=username),
                                  self.timeout)
 
         # Execute a get on the bridge to check username is ok!
-        self._bridge.config()
+        self._resource.config()
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def get_lights(self, sort_by_name=True):
-        if self._bridge is None:
+        if self._resource is None:
             raise BridgeError("Not connected to bridge")
 
-        lights =  [Light(id, self._bridge.lights[id], data)
-                   for id, data in self._bridge.lights().items()]
+        lights =  [Light(id, self._resource.lights[id], data)
+                   for id, data in self._resource.lights().items()]
         if sort_by_name:
             lights = sorted(lights, key=lambda l: l.name)
         return lights

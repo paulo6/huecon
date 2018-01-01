@@ -46,7 +46,7 @@ class HueCon(cli.Interface):
 
     def _connect_to_bridge(self):
         # Get known bridges
-        known_bridges = {a: u for a, u in self.config_file.get_bridges()}
+        known_bridges = {id: user for id, user in self.config_file.get_bridges()}
 
         address = input("Enter hue bridge host: ")
 
@@ -56,7 +56,9 @@ class HueCon(cli.Interface):
         except hue.Error as exc:
             exit_error("Bad bridge address: {!s}".format(exc))
 
-        if address not in known_bridges:
+        print("Connected to bridge '{}'".format(bridge.name))
+
+        if bridge.id not in known_bridges:
             print("Bridge not known, registering with bridge")
             input("Press bridge button then press enter to continue...")
 
@@ -69,9 +71,9 @@ class HueCon(cli.Interface):
             self.config_file.add_bridge(address, username)
             self.config_file.write_file()
         else:
-            username = known_bridges[address]
+            username = known_bridges[bridge.id]
 
-        print("Connecting...")
+        print("Logging in...")
         try:
             bridge.connect(username)
         except hue.Error as exc:

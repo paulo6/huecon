@@ -39,18 +39,18 @@ class Config:
         self._filename = filename
 
     def get_bridges(self):
-        """Generates tuples of (address, username) for known bridges."""
+        """Generates tuples of (id, username) for known bridges."""
         for bridge in self._data.get(_ConfigField.BRIDGES.value, []):
-            yield (bridge[_BridgeField.ADDRESS.value],
+            yield (bridge[_BridgeField.ID.value],
                    bridge[_BridgeField.USERNAME.value])
 
-    def add_bridge(self, address, username):
+    def add_bridge(self, id, username):
         """Add a bridge to the config file."""
         if _ConfigField.BRIDGES.value not in self._data:
             self._data[_ConfigField.BRIDGES.value] = []
 
         self._data[_ConfigField.BRIDGES.value].append(
-            {_BridgeField.ADDRESS.value: address,
+            {_BridgeField.ID.value: id,
              _BridgeField.USERNAME.value: username})
 
     def write_file(self):
@@ -94,5 +94,5 @@ class _ConfigField(enum.Enum):
 
 
 class _BridgeField(enum.Enum):
-    ADDRESS = "address"
+    ID = "bridgeid"
     USERNAME = "username"
