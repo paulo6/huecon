@@ -14,6 +14,7 @@ import cli
 
 # Config file location
 CONFIG_FILE = os.path.expanduser("~/.huecon")
+CLI_HISTORY_FILE = os.path.expanduser("~/.huecon_history")
 
 CLI_DEF = {
     "show:Show various Hue system info": {
@@ -41,6 +42,10 @@ CLI_DEF = {
             "None:Show summary": "show_resourcelinks",
             "name:Show specific resourcelink by name": {
                 "<rlink-name>:The resourcelink name to show":
+                    "show_resourcelink",
+            },
+            "id:Show specific resourcelink by id": {
+                "<rlink-id>:The resourcelink id to show":
                     "show_resourcelink",
             },
         },
@@ -168,20 +173,20 @@ class HueCon(cli.Interface):
         # Connect to bridge
         self.bridge = self._connect_to_bridge(bridge_address)
 
-        arg_defs = {
-            "<light-id>": ObjectIDArg(self.bridge.get_lights, "light"),
-            "<light-name>": ObjectNameArg(self.bridge.get_lights, "light"),
-            "<scene-id>": ObjectNameArg(self.bridge.get_scenes, "scene"),
-            "<scene-name>": ObjectNameArg(self.bridge.get_scenes, "scene"),
-            "<group-id>": ObjectIDArg(self.bridge.get_groups, "group"),
-            "<group-name>": ObjectNameArg(self.bridge.get_groups, "group"),
-            "<sensor-id>": ObjectIDArg(self.bridge.get_sensors, "sensor"),
-            "<sensor-name>": ObjectNameArg(self.bridge.get_sensors, "sensor"),
-            "<rlink-name>": ObjectNameArg(self.bridge.get_resourcelinks,
-                                          "resourcelink"),
-        }
+        # Create argument definitions
+        arg_defs = {}
+        for name, arg_name in (("light", None),
+                               ("scene", None),
+                               ("group", None),
+                               ("sensor", None),
+                               ("resourcelink", "rlink")):
+            if arg_name is None:
+                arg_name = name
+            func = getattr(self.bridge, "get_{}s".format(name))
+            arg_defs["<{}-id>".format(arg_name)] = ObjectIDArg(func, name)
+            arg_defs["<{}-name>".format(arg_name)] = ObjectNameArg(func, name)
 
-        super().__init__(CLI_DEF, arg_defs, ".huecon_history")
+        super().__init__(CLI_DEF, arg_defs, CLI_HISTORY_FILE)
 
     def _connect_to_bridge(self, bridge_address):
         # Get known bridges
@@ -224,6 +229,10 @@ class HueCon(cli.Interface):
 
         return bridge
 
+
+    # ------------------------------------------------------------------------
+    # Utils
+    # ------------------------------------------------------------------------
     def _print_light(self, light):
         print(light.name)
         print("  ID:", light.id)
@@ -241,6 +250,10 @@ class HueCon(cli.Interface):
         print("    " + "\n    ".join(l.name for l in scene.lights))
         print("  Last updated: {!s}".format(scene.last_updated))
 
+
+    # ------------------------------------------------------------------------
+    # Action functions
+    # ------------------------------------------------------------------------
     def show_lights(self, ctx):
         print("Lights:")
         for light in self.bridge.get_lights():
@@ -292,6 +305,7 @@ class HueCon(cli.Interface):
         print(rlink.name)
         print("  Description: {}".format(rlink.description))
         print("  ID: {}".format(rlink.id))
+        print("  Recycle: {}".format(bool_str(rlink.recycle)))
         print("  Links:")
         objects = rlink.links
         maxlen = max(len(type(obj).__name__) + len(obj.name) + 3

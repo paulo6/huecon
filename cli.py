@@ -63,6 +63,17 @@ class Interface:
         self._cmd.cmdloop()
 
     def _parse_cli(self, cli_def, arg_defs):
+        """
+        Private helper to parse cli definition dictionary.
+
+        Args:
+            cli_def: Dictionary containing cli definition
+            arg_defs: Argument definition dictionary
+
+        Returns:
+            The top level _CLIList
+
+        """
         def process(parent_name, helpstr, contents):
             if (isinstance(contents, dict) and
                     len(contents) == 1 and
@@ -112,6 +123,13 @@ class Interface:
 class Context:
     """
     Context representing information parsed from the command line.
+
+    Attributes:
+        kws: The keywords in the line executed
+        args: Dictionary of argument name to value
+        end: Set this to True to end the command prompt loop after this
+            execution
+        cmd_inst: The underlying Cmd instance.
 
     """
     def __init__(self, cmd_inst):

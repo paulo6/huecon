@@ -1,7 +1,5 @@
 #
-# bridge.py
-#
-# Hue Bridge interactions
+# bridge.py - Contains the main Hue bridge interface
 #
 import qhue
 import requests

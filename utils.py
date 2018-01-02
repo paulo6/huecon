@@ -12,6 +12,13 @@ class ReadlineWrapper(object):
         """
 
     def __init__(self, delims):
+        """
+        Initialize the readline wrapper.
+
+        Args:
+            delims: The readline delimiters to use.
+
+        """
         self._readline = self._setup(delims)
         self._history_file = None
 
@@ -19,6 +26,13 @@ class ReadlineWrapper(object):
     # Public APIs
     # ------------------------------------------------------------------------
     def set_history_file(self, filename):
+        """
+        Set the history file, loading contents into history if it exists
+
+        Args:
+            filename: The filename to load
+
+        """
         if self._readline is None:
             return
 
@@ -33,7 +47,6 @@ class ReadlineWrapper(object):
         except IOError:
             pass
         self._history_file = filename
-
 
     # ------------------------------------------------------------------------
     # Private

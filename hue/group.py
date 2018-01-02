@@ -1,4 +1,6 @@
-
+#
+# group.py - Contains Hue 'group' definitions
+#
 from . import object
 
 class Group(object.Object):

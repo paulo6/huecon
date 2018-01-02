@@ -1,6 +1,8 @@
+#
+# sensor.py - Contains Hue 'sensor' definitions
+#
 
 import enum
-from collections import namedtuple
 
 from . import object
 
@@ -43,6 +45,10 @@ class DimmerButtonEvent(enum.Enum):
 
 
 class Sensor(object.Object):
+    """
+    Represents a Hue sensor.
+
+    """
     _STATE_NAMES = {
         SensorType.DAYLIGHT: "daylight",
         SensorType.DIMMER_SWITCH: "buttonevent",
@@ -73,6 +79,8 @@ class Sensor(object.Object):
     def state_str(self):
         if self.sensor_type is SensorType.DIMMER_SWITCH:
             text = self.state.name.lower().replace("_", "-")
+        elif self.sensor_type is SensorType.DAYLIGHT:
+            text = "on" if self.state else "off"
         else:
             text = str(self.state)
         return text

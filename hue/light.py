@@ -1,7 +1,5 @@
 #
-# bridge.py
-#
-# Hue Light interactions
+# scene.py - Contains Hue 'light' definitions
 #
 
 from collections import namedtuple
@@ -13,6 +11,10 @@ State = namedtuple("State", ["on", "bri", "hue", "sat", "effect"])
 
 
 class Light(object.Object):
+    """
+    Represents a Hue light.
+
+    """
     @property
     def name(self):
         return self._data['name']

@@ -1,7 +1,14 @@
+#
+# resourcelink.py - Contains Hue 'resourcelink' definitions
+#
 
 from . import object
 
 class ResourceLink(object.Object):
+    """
+    Represents a Hue resourcelink.
+
+    """
     @property
     def name(self):
         return self._data['name']
@@ -9,6 +16,10 @@ class ResourceLink(object.Object):
     @property
     def description(self):
         return self._data['description']
+
+    @property
+    def recycle(self):
+        return self._data["recycle"]
 
     @property
     def links(self):

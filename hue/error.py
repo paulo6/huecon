@@ -1,3 +1,7 @@
+#
+# error.py - Contains error definitions used within the hue subpackage
+#
+
 class Error(Exception):
     """
     Base hue error class.

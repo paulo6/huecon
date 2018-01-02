@@ -1,4 +1,12 @@
+#
+# object.py - Contains generic representation of a Hue object
+#
+
 class Object:
+    """
+    The base class for all Hue objects.
+
+    """
     def __init__(self, bridge, obj_id, resource, data=None):
         self.id = obj_id
         self.bridge = bridge
