@@ -105,23 +105,23 @@ class Bridge:
         return self._get_objects("lights", sort_by_name)
 
     def get_light(self, light_id):
-        return self.get_object('lights', light_id)
+        return self._get_object('lights', light_id)
 
     def get_scenes(self, sort_by_name=True):
         return self._get_objects("scenes", sort_by_name)
 
     def get_scene(self, scene_id):
-        return self.get_object('scenes', scene_id)
+        return self._get_object('scenes', scene_id)
 
     def get_resourcelinks(self, sort_by_name=True):
         return self._get_objects("resourcelinks", sort_by_name)
 
     def get_resourcelink(self, rlink_id):
-        return self.get_object('resourcelinks', rlink_id)
+        return self._get_object('resourcelinks', rlink_id)
 
     def get_from_full_id(self, full_id):
         _, res_name, res_id = full_id.split("/")
-        return self.get_object(res_name, res_id)
+        return self._get_object(res_name, res_id)
 
     def get_from_full_ids(self, full_ids):
         # Find the set of resources we need to lookup.
@@ -144,7 +144,7 @@ class Bridge:
         return objects
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
-    def get_object(self, res_name, res_id):
+    def _get_object(self, res_name, res_id):
         if self._resource is None:
             raise BridgeError("Not connected to bridge")
 

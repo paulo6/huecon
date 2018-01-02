@@ -4,7 +4,7 @@
 #
 # Interactive command line Hue console
 #
-
+import argparse
 import os
 import sys
 
@@ -83,7 +83,7 @@ class ObjectIDArg(cli.ArgumentDef):
         try:
             return objects[arg]
         except KeyError as exc:
-            raise cli.ArgumentError("Unknown {}".format(self.name)) from exc
+            raise cli.ArgumentError("Unknown {} ID".format(self.name)) from exc
 
     def help_options(self, ctx):
         return [(o.id, o.name) for o in self.get_fn()]
@@ -121,7 +121,7 @@ class ObjectNameArg(cli.ArgumentDef):
         try:
             return objects[arg]
         except KeyError as exc:
-            raise cli.ArgumentError("Unknown {}".format(self.name),
+            raise cli.ArgumentError("Unknown {} name".format(self.name),
                                     arg) from exc
 
 
@@ -129,30 +129,33 @@ class HueCon(cli.Interface):
     intro = 'Welcome HueCon.   Type help or ? to list commands.\n'
     prompt = '(huecon) '
 
-    def __init__(self):
+    def __init__(self, bridge_address=None):
         # Load config file
         self.config_file = config.Config(CONFIG_FILE)
 
         # Connect to bridge
-        self.bridge = self._connect_to_bridge()
+        self.bridge = self._connect_to_bridge(bridge_address)
 
         arg_defs = {
-            "<light-id>": ObjectIDArg(self.bridge.get_lights, "light-id"),
-            "<light-name>": ObjectNameArg(self.bridge.get_lights, "light-name"),
-            "<scene-name>": ObjectNameArg(self.bridge.get_scenes, "scene-name"),
-            "<scene-id>": ObjectNameArg(self.bridge.get_scenes, "scene-id"),
+            "<light-id>": ObjectIDArg(self.bridge.get_lights, "light"),
+            "<light-name>": ObjectNameArg(self.bridge.get_lights, "light"),
+            "<scene-id>": ObjectNameArg(self.bridge.get_scenes, "scene"),
+            "<scene-name>": ObjectNameArg(self.bridge.get_scenes, "scene"),
             "<rlink-name>": ObjectNameArg(self.bridge.get_resourcelinks,
-                                          "resourcelink-name"),
+                                          "resourcelink"),
         }
 
         super().__init__(CLI_DEF, arg_defs)
 
-    def _connect_to_bridge(self):
+    def _connect_to_bridge(self, bridge_address):
         # Get known bridges
         known_bridges = {bid: user
                          for bid, user in self.config_file.get_bridges()}
 
-        address = input("Enter hue bridge host: ")
+        if bridge_address is None:
+            address = input("Enter hue bridge host: ")
+        else:
+            address = bridge_address
 
         # Create a bridge
         try:
@@ -215,10 +218,7 @@ class HueCon(cli.Interface):
                                                      light.id))
 
     def show_light(self, ctx):
-        if "name" in ctx.kws:
-            self._print_light(ctx.args['light-name'])
-        else:
-            self._print_light(ctx.args['light-id'])
+        self._print_light(ctx.args['light'])
 
     def show_lights_detail(self, ctx):
         print("Detailed lights info")
@@ -227,16 +227,12 @@ class HueCon(cli.Interface):
             self._print_light(light)
 
     def light_on(self, ctx):
-        light = ctx.args.get("light-id", None)
-        if light is None:
-            light = ctx.args["light-name"]
+        light = ctx.args.get("light", None)
         print("Turning light '{}' on".format(light.name))
         light.turn_on()
 
     def light_off(self, ctx):
-        light = ctx.args.get("light-id", None)
-        if light is None:
-            light = ctx.args["light-name"]
+        light = ctx.args.get("light", None)
         print("Turning light '{}' off".format(light.name))
         light.turn_off()
 
@@ -252,10 +248,7 @@ class HueCon(cli.Interface):
                 print("  {:{}}  (id: {})".format(scene.name, maxlen, scene.id))
 
     def show_scene(self, ctx):
-        if "name" in ctx.kws:
-            self._print_scene(ctx.args['scene-name'])
-        else:
-            self._print_scene(ctx.args['scene-id'])
+        self._print_scene(ctx.args['scene'])
 
     def show_resourcelinks(self, ctx):
         print("Resourcelinks:")
@@ -264,7 +257,7 @@ class HueCon(cli.Interface):
             print("    '{}'".format(rlink.description))
 
     def show_resourcelink(self, ctx):
-        rlink = ctx.args['resourcelink-name']
+        rlink = ctx.args['resourcelink']
         print(rlink.name)
         print("Description: {}".format(rlink.description))
         print("Links:")
@@ -282,5 +275,9 @@ class HueCon(cli.Interface):
 
 
 if __name__ == '__main__':
-    HueCon()
+    parser = argparse.ArgumentParser(
+        description="Interactive console for managing Hue lights")
+    parser.add_argument("-b", "--bridge", help="Connect to this bridge")
+    args = parser.parse_args()
+    HueCon(args.bridge)
 

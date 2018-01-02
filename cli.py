@@ -111,11 +111,11 @@ class Context:
     Context representing information parsed from the command line.
 
     """
-    def __init__(self, base):
+    def __init__(self, cmd_inst):
         self.kws = []
         self.args = {}
         self.end = False
-        self.base = base
+        self.cmd_inst = cmd_inst
 
 
 class ArgumentDef:
@@ -400,7 +400,7 @@ class _CLIArgument(_CLIBase):
             return [fixup(x) for x in self._def.complete(ctx, line)]
 
     def display_help(self, ctx):
-        print(self.helpstr)
+        print("<{}> - {}".format(self._def.name, self.helpstr))
 
         options = self._def.help_options(ctx)
         if options:
@@ -410,7 +410,7 @@ class _CLIArgument(_CLIBase):
                 for value, helpstr in options:
                     print("  {:{}} - {}".format(value, maxlen, helpstr))
             else:
-                ctx.base.columnize(options)
+                ctx.cmd_inst.columnize(options)
 
 
 
