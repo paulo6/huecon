@@ -5,6 +5,7 @@ import qhue
 import requests
 import cachetools
 import operator
+import socket
 
 from .error import *
 from .light import Light
@@ -22,7 +23,7 @@ _BASIC_CONFIG_URL = "http://{address}/api/config"
 _REGISTER_URL = "http://{address}/api"
 
 # URL to connect to bridge
-_CONNECT_URL = "http://{address}/api/{username}"
+_AUTH_URL = "http://{address}/api/{username}"
 
 # default timeout in seconds
 _DEFAULT_TIMEOUT = 5
@@ -110,7 +111,11 @@ class Bridge:
 
         Args:
             devicetype: The device type - used by the bridge to give some
-                        context to who the registration belongs to
+                        context to who the registration belongs to.
+
+                        This is usually of the form "app#user" - if the #user
+                        part is not present, then hostname will be
+                        automatically added.
 
         Returns: The unique username that this app should use with 'auth'.
                  This should be saved for future usage.
@@ -118,6 +123,8 @@ class Bridge:
         """
         res = _Resource(_REGISTER_URL.format(address=self.address),
                         self.timeout)
+        if "#" not in devicetype:
+            devicetype += "#{}".format(socket.gethostname())
         response = res(devicetype=devicetype, http_method="post")
         return response[0]["success"]["username"]
 
@@ -129,8 +136,8 @@ class Bridge:
             username: The username from a previous call to 'register'
 
         """
-        self._resource = _Resource(_CONNECT_URL.format(address=self.address,
-                                                       username=username),
+        self._resource = _Resource(_AUTH_URL.format(address=self.address,
+                                                    username=username),
                                    self.timeout)
 
         # Execute a get on the bridge to check username is ok!
@@ -159,6 +166,9 @@ class Bridge:
 
     def get_sensors(self, sort_by_name=True):
         return self._get_objects("sensors", sort_by_name)
+
+    def get_rules(self, sort_by_name=True):
+        return self._get_objects("rules", sort_by_name)
 
     def get_from_full_id(self, full_id):
         _, res_name, res_id = full_id.split("/")

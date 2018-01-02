@@ -5,6 +5,7 @@
 import enum
 
 from . import object
+from . import error
 
 
 class SensorType(enum.Enum):
@@ -23,25 +24,25 @@ class DimmerButtonEvent(enum.Enum):
     Enum of dimmer button events.
 
     """
-    ON_INITIAL_PRESSED = 1000
-    ON_HOLD = 1001
-    ON_SHORT_RELEASED = 1002
-    ON_LONG_RELEASED = 1003
+    ON_INITIAL_PRESSED = "1000"
+    ON_HOLD = "1001"
+    ON_SHORT_RELEASED = "1002"
+    ON_LONG_RELEASED = "1003"
 
-    DIM_UP_INITIAL_PRESSED = 2000
-    DIM_UP_HOLD = 2001
-    DIM_UP_SHORT_RELEASED = 2002
-    DIM_UP_LONG_RELEASED = 2003
+    DIM_UP_INITIAL_PRESSED = "2000"
+    DIM_UP_HOLD = "2001"
+    DIM_UP_SHORT_RELEASED = "2002"
+    DIM_UP_LONG_RELEASED = "2003"
 
-    DIM_DOWN_INITIAL_PRESSED = 3000
-    DIM_DOWN_HOLD = 3001
-    DIM_DOWN_SHORT_RELEASED = 3002
-    DIM_DOWN_LONG_RELEASED = 3003
+    DIM_DOWN_INITIAL_PRESSED = "3000"
+    DIM_DOWN_HOLD = "3001"
+    DIM_DOWN_SHORT_RELEASED = "3002"
+    DIM_DOWN_LONG_RELEASED = "3003"
 
-    OFF_INITIAL_PRESSED = 4000
-    OFF_HOLD = 4001
-    OFF_SHORT_RELEASED = 4002
-    OFF_LONG_RELEASED = 4003
+    OFF_INITIAL_PRESSED = "4000"
+    OFF_HOLD = "4001"
+    OFF_SHORT_RELEASED = "4002"
+    OFF_LONG_RELEASED = "4003"
 
 
 class Sensor(object.Object):
@@ -49,7 +50,7 @@ class Sensor(object.Object):
     Represents a Hue sensor.
 
     """
-    _STATE_NAMES = {
+    STATE_NAMES = {
         SensorType.DAYLIGHT: "daylight",
         SensorType.DIMMER_SWITCH: "buttonevent",
         SensorType.TAP_SWITCH: "buttonevent",
@@ -96,4 +97,86 @@ class Sensor(object.Object):
     @property
     def recycle(self):
         return self._data.get("recycle")
+
+    @property
+    def condition_items(self):
+        return [ConditionItem.LAST_UPDATED,
+                ConditionItem("state/{}".format(self.state_name))]
+
+    def parse_condition(self, item_addr, operator, value):
+        return Condition(self, ConditionItem(item_addr),
+                         operator, value)
+
+    def parse_action(self, item_addr, body):
+        return Action(self, body.get('status'))
+
+
+class ConditionItem(enum.Enum):
+    DAYLIGHT = "state/daylight"
+    BUTTON_EVENT = "state/buttonevent"
+    STATUS = "state/status"
+    LAST_UPDATED = "state/lastupdated"
+
+
+class Condition(object.Condition):
+    def __init__(self, sensor, item, operator, value):
+        self._sensor = sensor
+        self._item = item
+        self._operator = operator
+
+        if item is ConditionItem.BUTTON_EVENT:
+            self._value = DimmerButtonEvent(value)
+        else:
+            self._value = value
+
+    @property
+    def address(self):
+        return "{}/{}".format(self._sensor.full_id,
+                              self._item.value)
+
+    @property
+    def operator(self):
+        return self._operator
+
+    @property
+    def value(self):
+        if isinstance(self._value, enum.Enum):
+            return self._value.value
+        else:
+            return self._value
+
+    def __str__(self):
+        if isinstance(self._value, enum.Enum):
+            val_str = self._value.name.lower().replace("_", "-")
+        else:
+            val_str = self._value
+        return self.str_helper("Sensor", self._sensor.name,
+                               self._item.name.lower().replace("_", "-"),
+                               self.operator, val_str)
+
+
+class Action(object.Action):
+    def __init__(self, sensor, value):
+        # Can only have actions for GENERIC_STATUS sensors
+        if sensor.sensor_type != SensorType.GENERIC_STATUS:
+            raise error.ActionError("Actions only permitted for generic status")
+
+        self._sensor = sensor
+        self._value = value
+
+    @property
+    def address(self):
+        return "{}/state".format(self._sensor.full_id)
+
+    @property
+    def body(self):
+        return { 'status': self._value }
+
+    def __str__(self):
+        return "Sensor '{}': set status = {}".format(self._sensor.name,
+                                                     self._value)
+
+
+
+
 

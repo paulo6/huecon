@@ -67,6 +67,15 @@ CLI_DEF = {
                 "<sensor-id>:Show sensor with this id": "show_sensor",
             },
         },
+        "rules:Show the rules": {
+            "None:Show summary": "show_rules",
+            "name:Show specific rule by name": {
+                "<rule-name>:Show rule with this name": "show_rule",
+            },
+            "id:Show specific rule by id": {
+                "<rule-id>:Show rule with this id": "show_rule",
+            },
+        },
     },
     "light:Perform actions for a light": {
         "id:Perform action for a light id": {
@@ -179,6 +188,7 @@ class HueCon(cli.Interface):
                                ("scene", None),
                                ("group", None),
                                ("sensor", None),
+                               ("rule", None),
                                ("resourcelink", "rlink")):
             if arg_name is None:
                 arg_name = name
@@ -355,6 +365,25 @@ class HueCon(cli.Interface):
         print("  State: {}".format(sensor.state_str))
         print("  Last updated: {}".format(sensor.last_updated))
         print("  Recycle: {}".format(bool_str(sensor.recycle)))
+
+    def show_rules(self, ctx):
+        print("Rules:")
+        rules = self.bridge.get_rules()
+        maxlen = max(len(rule.name) for rule in rules)
+        for rule in rules:
+            print("  {:{}}  (id: {})"
+                  .format(rule.name, maxlen, rule.id))
+
+    def show_rule(self, ctx):
+        rule = ctx.args['rule']
+        print(rule.name)
+        print("  ID: {}".format(rule.id))
+        print("  Conditions:")
+        for cond in rule.conditions:
+            print("    {!s}".format(cond))
+        print("  Actions:")
+        for act in rule.actions:
+            print("    {!s}".format(act))
 
     def group_on(self, ctx):
         group = ctx.args["group"]

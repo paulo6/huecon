@@ -40,3 +40,9 @@ class LightError(Error):
 
     """
     pass
+
+class ConditionError(Error):
+    pass
+
+class ActionError(Error):
+    pass
