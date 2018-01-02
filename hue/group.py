@@ -55,14 +55,18 @@ class Group(object.Object):
         scene_id = body.get('scene')
         scene = (self.bridge.get_scene(scene_id)
                  if scene_id is not None else None)
-        return Action(self, body.get('on'), scene)
+        return Action(self, body.get('on'), scene,
+                      body.get('transitiontime'), body.get('bri_inc'))
 
 
 class Action(object.Action):
-    def __init__(self, group, is_on=None, scene=None):
+    def __init__(self, group, is_on=None, scene=None, transition_time=None,
+                 bright_inc=None):
         self._group = group
         self._is_on = is_on
         self._scene = scene
+        self._transition_time = transition_time
+        self._bright_inc = bright_inc
 
     @property
     def address(self):
@@ -75,6 +79,10 @@ class Action(object.Action):
             out['on'] = self._is_on
         if self._scene is not None:
             out['scene'] = self._scene.id
+        if self._transition_time is not None:
+            out['transitiontime'] = self._transition_time
+        if self._bright_inc is not None:
+            out['bri_inc'] = self._bright_inc
 
     def __str__(self):
         actions = []
@@ -85,6 +93,10 @@ class Action(object.Action):
                 actions.append("turn off")
         if self._scene is not None:
             actions.append("enable '{}'".format(self._scene.name))
+        if self._transition_time is not None:
+            actions.append("transition-time {}".format(self._transition_time))
+        if self._bright_inc is not None:
+            actions.append("brightness-inc {}".format(self._bright_inc))
         return "Group '{}': {}".format(self._group.name,
                                        ", ".join(actions))
 

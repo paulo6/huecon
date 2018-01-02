@@ -33,7 +33,7 @@ class Rule(object.Object):
     @property
     def actions(self):
         def lookup(address, body):
-            match = re.match(r"(/\w+/\d+)/(.*)", address)
+            match = re.match(r"(/\w+/\d+)/?(.*)", address)
             if not match:
                 raise error.ConditionError("Bad address {}".format(address))
             full_id, item_addr = match.groups()
