@@ -17,80 +17,80 @@ CONFIG_FILE = os.path.expanduser("~/.huecon")
 CLI_HISTORY_FILE = os.path.expanduser("~/.huecon_history")
 
 CLI_DEF = {
-    "show:Show various Hue system info": {
+    "show|:Show various Hue system info": {
         "lights:Show the lights": {
             "None:Show summary": "show_lights",
             "detail:Show detail": "show_lights_detail",
             "name:Show specific light by name": {
-                "<light-name>:The light name to show": "show_light",
+                "<light-name>:Show light with this name": "show_light",
             },
             "id:Show specific light by id": {
-                "<light-id>:The light id to show": "show_light",
+                "<light-id>:Show light with this id": "show_light",
             },
         },
         "scenes:Show the scenes": {
             "None:Show summary": "show_scenes",
             "detail:Show detail": "show_scenes",
             "name:Show specific scene by name": {
-                "<scene-name>:The scene name to show": "show_scene",
+                "<scene-name>:Show scene with this name": "show_scene",
             },
             "id:Show specific scene by id": {
-                "<scene-id>:The scene id to show": "show_scene",
+                "<scene-id>:Show scene with this id": "show_scene",
             },
         },
         "resourcelinks:Show the resourcelinks": {
             "None:Show summary": "show_resourcelinks",
             "name:Show specific resourcelink by name": {
-                "<rlink-name>:The resourcelink name to show":
+                "<rlink-name>:Show resourcelink with this name":
                     "show_resourcelink",
             },
             "id:Show specific resourcelink by id": {
-                "<rlink-id>:The resourcelink id to show":
+                "<rlink-id>:Show resourcelinl with this id":
                     "show_resourcelink",
             },
         },
         "groups:Show the groups": {
             "None:Show summary": "show_groups",
             "name:Show specific group by name": {
-                "<group-name>:The group name to show": "show_group",
+                "<group-name>:Show group with this name": "show_group",
             },
             "id:Show specific group by id": {
-                "<group-id>:The group id to show": "show_group",
+                "<group-id>:Show group with this id": "show_group",
             },
         },
         "sensors:Show the sensors": {
             "None:Show summary": "show_sensors",
             "name:Show specific sensor by name": {
-                "<sensor-name>:The sensor name to show": "show_sensor",
+                "<sensor-name>:Show sensor with this name": "show_sensor",
             },
             "id:Show specific sensor by id": {
-                "<sensor-id>:The sensor id to show": "show_sensor",
+                "<sensor-id>:Show sensor with this id": "show_sensor",
             },
         },
     },
     "light:Perform actions for a light": {
-        "id:Perform action for this light id": {
-            "<light-id>:The light id": {
+        "id:Perform action for a light id": {
+            "<light-id>:Perform action for this light id": {
                 "on:Turn light on": "light_on",
                 "off:Turn light off": "light_off",
             },
         },
-        "name:Perform action for this light name": {
-            "<light-name>:The light name": {
+        "name:Perform action for a light name": {
+            "<light-name>:Perform action for this light name": {
                 "on:Turn light on": "light_on",
                 "off:Turn light off": "light_off",
             },
         },
     },
     "group:Perform actions for a group": {
-        "id:Perform action for this group id": {
-            "<group-id>:The geoup id": {
+        "id:Perform action for a group id": {
+            "<group-id>:Perform action for this group id": {
                 "on:Turn group on": "group_on",
                 "off:Turn group off": "group_off",
             },
         },
-        "name:Perform action for this group name": {
-            "<group-name>:The group name": {
+        "name:Perform action for a group name": {
+            "<group-name>:Perform action for this group name": {
                 "on:Turn group on": "group_on",
                 "off:Turn group off": "group_off",
             },
@@ -108,7 +108,7 @@ def exit_error(message):
 class ObjectIDArg(cli.ArgumentDef):
     def __init__(self, get_fn, arg_name):
         self.get_fn = get_fn
-        super().__init__(arg_name)
+        super().__init__(arg_name + "-id", arg_name)
 
     def complete(self, ctx, arg):
         return [o.id for o in self.get_fn()
@@ -129,7 +129,7 @@ class ObjectIDArg(cli.ArgumentDef):
 class ObjectNameArg(cli.ArgumentDef):
     def __init__(self, get_fn, arg_name):
         self.get_fn = get_fn
-        super().__init__(arg_name)
+        super().__init__(arg_name + "-name", arg_name)
 
     def splitline(self, ctx, arg):
         # If there are quotes, then walk till we find last
@@ -188,6 +188,9 @@ class HueCon(cli.Interface):
 
         super().__init__(CLI_DEF, arg_defs, CLI_HISTORY_FILE)
 
+    # ------------------------------------------------------------------------
+    # Utils
+    # ------------------------------------------------------------------------
     def _connect_to_bridge(self, bridge_address):
         # Get known bridges
         known_bridges = {bid: user
@@ -223,16 +226,12 @@ class HueCon(cli.Interface):
 
         print("Logging in...")
         try:
-            bridge.connect(username)
+            bridge.auth(username)
         except hue.Error as exc:
             exit_error("Failed to connect to bridge: {!s}".format(exc))
 
         return bridge
 
-
-    # ------------------------------------------------------------------------
-    # Utils
-    # ------------------------------------------------------------------------
     def _print_light(self, light):
         print(light.name)
         print("  ID:", light.id)
@@ -249,6 +248,8 @@ class HueCon(cli.Interface):
         print("  Lights:")
         print("    " + "\n    ".join(l.name for l in scene.lights))
         print("  Last updated: {!s}".format(scene.last_updated))
+        print("  Recycle: {}".format(bool_str(scene.recycle)))
+        print("  Locked: {}".format(bool_str(scene.locked)))
 
 
     # ------------------------------------------------------------------------

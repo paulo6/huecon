@@ -66,6 +66,22 @@ class Bridge:
     }
 
     def __init__(self, address, timeout=_DEFAULT_TIMEOUT):
+        """
+        Initialize bridge instance.
+
+        This will perform basic connectivity check and obtain the bridge name.
+
+        After init, 'auth' must be called before any further operations can be
+        done.
+
+        If no username has been created for this app yet, then 'register' can
+        be called before auth to add a registration.
+
+        Args:
+            address: Address of the bridge. Can be IP or hostname.
+            timeout: The timeout to use (default 5)
+
+        """
         self.address = address
         self.timeout = timeout
         self.name = None
@@ -84,14 +100,35 @@ class Bridge:
         return _Resource(_BASIC_CONFIG_URL.format(address=address),
                          self.timeout)()
 
-    def register(self, devicetype, timeout=None):
-        if timeout is None:
-            timeout = self.timeout
-        res = _Resource(_REGISTER_URL.format(address=self.address), timeout)
+    def register(self, devicetype):
+        """
+        Create a registration with the bridge.
+
+        Before calling this, the user needs to press the bridge button.
+
+        The result of this should be saved for future usage.
+
+        Args:
+            devicetype: The device type - used by the bridge to give some
+                        context to who the registration belongs to
+
+        Returns: The unique username that this app should use with 'auth'.
+                 This should be saved for future usage.
+
+        """
+        res = _Resource(_REGISTER_URL.format(address=self.address),
+                        self.timeout)
         response = res(devicetype=devicetype, http_method="post")
         return response[0]["success"]["username"]
 
-    def connect(self, username):
+    def auth(self, username):
+        """
+        Authenticate with the bridge using a previous
+
+        Args:
+            username: The username from a previous call to 'register'
+
+        """
         self._resource = _Resource(_CONNECT_URL.format(address=self.address,
                                                        username=username),
                                    self.timeout)
@@ -138,7 +175,7 @@ class Bridge:
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _get_objects(self, res_name, sort_by_name):
         if self._resource is None:
-            raise BridgeError("Not connected to bridge")
+            raise BridgeError("Not authed with bridge")
 
         objects = [self._CLASSES[res_name](self, i,
                                            self._resource[res_name][i], data)
@@ -150,7 +187,7 @@ class Bridge:
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _get_object(self, res_name, res_id):
         if self._resource is None:
-            raise BridgeError("Not connected to bridge")
+            raise BridgeError("Not authed with bridge")
 
         return self._CLASSES[res_name](self, res_id,
                                        self._resource[res_name][res_id])

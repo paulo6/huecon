@@ -21,3 +21,11 @@ class Scene(object.Object):
     @property
     def last_updated(self):
         return self._data['lastupdated']
+
+    @property
+    def recycle(self):
+        return self._data['recycle']
+
+    @property
+    def locked(self):
+        return self._data['locked']
