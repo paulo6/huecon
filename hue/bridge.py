@@ -119,6 +119,12 @@ class Bridge:
     def get_resourcelink(self, rlink_id):
         return self._get_object('resourcelinks', rlink_id)
 
+    def get_groups(self, sort_by_name=True):
+        return self._get_objects("groups", sort_by_name)
+
+    def get_sensors(self, sort_by_name=True):
+        return self._get_objects("sensors", sort_by_name)
+
     def get_from_full_id(self, full_id):
         _, res_name, res_id = full_id.split("/")
         return self._get_object(res_name, res_id)

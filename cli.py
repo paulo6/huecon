@@ -4,11 +4,9 @@
 import cmd as pycmd
 import traceback
 
-try:
-    import readline
-    readline.set_completer_delims(" ")
-except ImportError:
-    pass
+import utils
+
+READLINE_WRAP = utils.ReadlineWrapper(" ")
 
 
 class Error(Exception):
@@ -42,7 +40,7 @@ class Interface:
     intro = ""
     prompt = "> "
 
-    def __init__(self, cli_def, arg_defs):
+    def __init__(self, cli_def, arg_defs, history_filename=None):
         """
         Initialize the command prompt.
 
@@ -57,6 +55,11 @@ class Interface:
         """
         self._cmd = _Cmd(self._parse_cli(cli_def, arg_defs),
                          self.intro, self.prompt)
+
+        # Load history file
+        if history_filename:
+            READLINE_WRAP.set_history_file(history_filename)
+
         self._cmd.cmdloop()
 
     def _parse_cli(self, cli_def, arg_defs):
@@ -199,27 +202,53 @@ class _Cmd(pycmd.Cmd):
         self.cli_list.add_keyword("help", _CLIAction("Display command help",
                                                      None))
 
+    def cmdloop(self, intro=None):
+        """
+        Main command loop function.
+
+        We override the cmdloop to provide ctrl+c and exception handling
+
+        """
+        # Print intro and subintro only when entering the loop (not when it
+        # is restarted due to ctrl+c)
+        if intro is None:
+            intro = self.intro
+        if intro is not None:
+            print(self.intro)
+
+        loop = True
+        while loop:
+            try:
+                # Reset intro to ensure it isn't printed again
+                self.intro = None
+                super().cmdloop()
+                loop = False
+            except KeyboardInterrupt:
+                print("^C")
+            finally:
+                # Restore intro
+                self.intro = intro
+
     def completenames(self, text, line, begidx, endidx):
         return self.completedefault(text, line, begidx, endidx)
 
     def completedefault(self, text, line, begidx, endidx):
         ctx = Context(self)
         try:
-            # If the command is help, then strip off the help then offer the
-            # full cli tree as options.
-            if line.startswith("help "):
-                return self.cli_list.complete(ctx, line[5:])
-            else:
-                return self.cli_list.complete(ctx, line)
+            return self.cli_list.complete(ctx, line)
         except Exception:
             print("Completion error!!")
             traceback.print_exc()
 
     def onecmd(self, line):
+        # Parse and process the line, checking for ? and checking whether
+        # the command matches any of our 'hidden' do_<cmd>s
+        cmd, arg, _ = self.parseline(line)
+
         if not line or not line.strip():
             return
-        elif line.startswith("help"):
-            self.do_help(line[4:].lstrip())
+        elif cmd is not None and hasattr(self, "do_" + cmd):
+            getattr(self, 'do_' + cmd)(arg)
         else:
             ctx = Context(self)
             try:
@@ -230,10 +259,20 @@ class _Cmd(pycmd.Cmd):
             return ctx.end
 
     def do_help(self, arg):
-        if not arg:
-            self.onecmd("?")
+        ctx = Context(self)
+        if not arg or not arg.strip():
+            self.cli_list.execute(ctx, "?")
+        elif arg == "help":
+            self.cli_list.execute(ctx, "help ?")
         else:
-            self.onecmd(arg + " ?")
+            self.cli_list.execute(ctx, arg + " ?")
+
+    def complete_help(self, _text, line, _begidx, _endidx):
+        arg = line[5:]
+        return self.completedefault(arg, arg, 0, len(arg))
+
+    def do_EOF(self, arg):
+        print("")
 
 
 class _CLIBase:

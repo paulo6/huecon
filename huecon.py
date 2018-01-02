@@ -44,6 +44,24 @@ CLI_DEF = {
                     "show_resourcelink",
             },
         },
+        "groups:Show the groups": {
+            "None:Show summary": "show_groups",
+            "name:Show specific group by name": {
+                "<group-name>:The group name to show": "show_group",
+            },
+            "id:Show specific group by id": {
+                "<group-id>:The group id to show": "show_group",
+            },
+        },
+        "sensors:Show the sensors": {
+            "None:Show summary": "show_sensors",
+            "name:Show specific sensor by name": {
+                "<sensor-name>:The sensor name to show": "show_sensor",
+            },
+            "id:Show specific sensor by id": {
+                "<sensor-id>:The sensor id to show": "show_sensor",
+            },
+        },
     },
     "light:Perform actions for a light": {
         "id:Perform action for this light id": {
@@ -56,6 +74,20 @@ CLI_DEF = {
             "<light-name>:The light name": {
                 "on:Turn light on": "light_on",
                 "off:Turn light off": "light_off",
+            },
+        },
+    },
+    "group:Perform actions for a group": {
+        "id:Perform action for this group id": {
+            "<group-id>:The geoup id": {
+                "on:Turn group on": "group_on",
+                "off:Turn group off": "group_off",
+            },
+        },
+        "name:Perform action for this group name": {
+            "<group-name>:The group name": {
+                "on:Turn group on": "group_on",
+                "off:Turn group off": "group_off",
             },
         },
     },
@@ -141,11 +173,15 @@ class HueCon(cli.Interface):
             "<light-name>": ObjectNameArg(self.bridge.get_lights, "light"),
             "<scene-id>": ObjectNameArg(self.bridge.get_scenes, "scene"),
             "<scene-name>": ObjectNameArg(self.bridge.get_scenes, "scene"),
+            "<group-id>": ObjectIDArg(self.bridge.get_groups, "group"),
+            "<group-name>": ObjectNameArg(self.bridge.get_groups, "group"),
+            "<sensor-id>": ObjectIDArg(self.bridge.get_sensors, "sensor"),
+            "<sensor-name>": ObjectNameArg(self.bridge.get_sensors, "sensor"),
             "<rlink-name>": ObjectNameArg(self.bridge.get_resourcelinks,
                                           "resourcelink"),
         }
 
-        super().__init__(CLI_DEF, arg_defs)
+        super().__init__(CLI_DEF, arg_defs, ".huecon_history")
 
     def _connect_to_bridge(self, bridge_address):
         # Get known bridges
@@ -191,8 +227,8 @@ class HueCon(cli.Interface):
     def _print_light(self, light):
         print(light.name)
         print("  ID:", light.id)
-        print("  Reachable:", light.is_reachable)
-        print("  On:", light.is_on)
+        print("  Reachable:", bool_str(light.is_reachable))
+        print("  On:", bool_str(light.is_on))
         print("  Brightness:", light.state.bri)
         print("  Hue:", light.state.hue)
         print("  Saturation:", light.state.sat)
@@ -208,13 +244,8 @@ class HueCon(cli.Interface):
     def show_lights(self, ctx):
         print("Lights:")
         for light in self.bridge.get_lights():
-            if not light.is_reachable:
-                state = "??"
-            elif light.is_on:
-                state = "on"
-            else:
-                state = "off"
-            print("  {}  (state: {}, id: {})".format(light.name, state,
+            print("  {}  (state: {}, id: {})".format(light.name,
+                                                     light.state_str,
                                                      light.id))
 
     def show_light(self, ctx):
@@ -227,12 +258,12 @@ class HueCon(cli.Interface):
             self._print_light(light)
 
     def light_on(self, ctx):
-        light = ctx.args.get("light", None)
+        light = ctx.args["light"]
         print("Turning light '{}' on".format(light.name))
         light.turn_on()
 
     def light_off(self, ctx):
-        light = ctx.args.get("light", None)
+        light = ctx.args["light"]
         print("Turning light '{}' off".format(light.name))
         light.turn_off()
 
@@ -259,19 +290,79 @@ class HueCon(cli.Interface):
     def show_resourcelink(self, ctx):
         rlink = ctx.args['resourcelink']
         print(rlink.name)
-        print("Description: {}".format(rlink.description))
-        print("Links:")
+        print("  Description: {}".format(rlink.description))
+        print("  ID: {}".format(rlink.id))
+        print("  Links:")
         objects = rlink.links
         maxlen = max(len(type(obj).__name__) + len(obj.name) + 3
                      for obj in objects)
         for obj in objects:
             name = "{} '{}'".format(type(obj).__name__,
                                     obj.name)
-            print("  {:{}}  (id: {})".format(name, maxlen, obj.id))
+            print("    {:{}}  (id: {})".format(name, maxlen, obj.id))
+
+    def show_groups(self, ctx):
+        print("Groups:")
+        groups = self.bridge.get_groups()
+        maxlen = max(len(group.name) for group in groups)
+        for group in groups:
+            print("  {:{}}  (state: {}, type: {}, id: {})"
+                  .format(group.name, maxlen, group.state_str,
+                          group.type, group.id))
+
+    def show_group(self, ctx):
+        group = ctx.args['group']
+        print(group.name)
+        print("  ID: {}".format(group.id))
+        print("  Type: {}".format(group.type))
+        print("  Class: {}".format(group.group_class))
+        print("  State: {}".format(group.state_str))
+        print("  Recycle: {}".format(bool_str(group.recycle)))
+        print("  Lights:")
+        for light in group.lights:
+            print("    {} ({})".format(light.name, light.state_str))
+
+    def show_sensors(self, ctx):
+        print("Sensors:")
+        sensors = self.bridge.get_sensors()
+        maxlen = max(len(sensor.name) for sensor in sensors)
+        for sensor in sensors:
+            print("  {:{}}  (type: {}, state: {}, id: {})"
+                  .format(sensor.name, maxlen,
+                          sensor.type_str,
+                          sensor.state_str, sensor.id))
+
+    def show_sensor(self, ctx):
+        sensor = ctx.args['sensor']
+        print(sensor.name)
+        print("  ID: {}".format(sensor.id))
+        print("  Type: {}".format(sensor.type_str))
+        print("  State: {}".format(sensor.state_str))
+        print("  Last updated: {}".format(sensor.last_updated))
+        print("  Recycle: {}".format(bool_str(sensor.recycle)))
+
+    def group_on(self, ctx):
+        group = ctx.args["group"]
+        print("Turning group '{}' on".format(group.name))
+        group.turn_on()
+
+    def group_off(self, ctx):
+        group = ctx.args["group"]
+        print("Turning group '{}' off".format(group.name))
+        group.turn_off()
 
     def do_exit(self, ctx):
         print("Bye!")
         ctx.end = True
+
+
+def bool_str(val):
+    if val is None:
+        return "--"
+    elif val:
+        return "Yes"
+    else:
+        return "No"
 
 
 if __name__ == '__main__':

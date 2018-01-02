@@ -33,6 +33,15 @@ class Light(object.Object):
     def is_reachable(self):
         return self._data['state']['reachable']
 
+    @property
+    def state_str(self):
+        if not self.is_reachable:
+            return "??"
+        elif self.is_on:
+            return "on"
+        else:
+            return "off"
+
     def turn_on(self):
         self._resource.state(on=True)
         self.refresh()
