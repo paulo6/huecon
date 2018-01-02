@@ -335,7 +335,14 @@ class _CLIList(_CLIBase):
         maxlen = max(len(c) for c in self._elems if c is not None)
         print(self.helpstr)
         print("\nOptions:")
-        for cmd, elem in self._elems.items():
+
+        if None in self._elems:
+            maxlen = max(maxlen, len("<br>"))
+            print("  {:{}} - {}".format("<br>", maxlen,
+                                        self._elems[None].helpstr))
+
+        elems = (i for i in self._elems.items() if i[0] is not None)
+        for cmd, elem in sorted(elems, key=lambda i: i[0]):
             print("  {:{}} - {}".format(cmd, maxlen, elem.helpstr))
 
 

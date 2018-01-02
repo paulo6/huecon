@@ -6,15 +6,13 @@
 
 from collections import namedtuple
 
+from . import object
+
+
 State = namedtuple("State", ["on", "bri", "hue", "sat", "effect"])
 
 
-class Light:
-    def __init__(self, light_id, resource, data):
-        self.id = light_id
-        self._resource = resource
-        self._data = data
-
+class Light(object.Object):
     @property
     def name(self):
         return self._data['name']
@@ -34,9 +32,6 @@ class Light:
     @property
     def is_reachable(self):
         return self._data['state']['reachable']
-
-    def refresh(self):
-        self._data = self._resource()
 
     def turn_on(self):
         self._resource.state(on=True)

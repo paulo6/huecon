@@ -28,3 +28,11 @@ class BridgeError(Error):
 
     """
     pass
+
+
+class LightError(Error):
+    """
+    Light error
+
+    """
+    pass
