@@ -229,7 +229,7 @@ class HueCon(cli.Interface):
                 exit_error("Failed to register with bridge: {!s}".format(exc))
 
             # Update config
-            self.config_file.add_bridge(address, username)
+            self.config_file.add_bridge(bridge.id, username)
             self.config_file.write_file()
         else:
             username = known_bridges[bridge.id]
