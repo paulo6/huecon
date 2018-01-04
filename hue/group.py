@@ -83,6 +83,7 @@ class Action(common.Action):
             out['transitiontime'] = self._transition_time
         if self._bright_inc is not None:
             out['bri_inc'] = self._bright_inc
+        return out
 
     def __str__(self):
         actions = []
@@ -92,7 +93,7 @@ class Action(common.Action):
             else:
                 actions.append("turn off")
         if self._scene is not None:
-            actions.append("enable '{}'".format(self._scene.name))
+            actions.append("scene '{}'".format(self._scene.name))
         if self._transition_time is not None:
             actions.append("transition-time {}".format(self._transition_time))
         if self._bright_inc is not None:

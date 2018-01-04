@@ -144,7 +144,7 @@ class Bridge:
                                    self.timeout)
 
         # Execute a get on the bridge to check username is ok!
-        self._get_config()
+        self._resource.lights()
 
     def get_whitelist(self):
         data = self._get_config()['whitelist']
@@ -179,6 +179,9 @@ class Bridge:
 
     def get_rules(self, sort_by_name=True):
         return self._get_objects("rules", sort_by_name)
+
+    def get_schedules(self, sort_by_name=True):
+        return self._get_objects("schedules", sort_by_name)
 
     def get_from_full_id(self, full_id):
         _, res_name, res_id = full_id.split("/")

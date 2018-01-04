@@ -37,6 +37,7 @@ class Rule(common.Object):
     @property
     def conditions(self):
         def lookup(address, op, val):
+            # Address is /<resource>/<id>/<item>
             match = re.match(r"(/\w+/\d+)/(.*)", address)
             if not match:
                 raise error.ConditionError("Bad address {}".format(address))
@@ -50,6 +51,8 @@ class Rule(common.Object):
     @property
     def actions(self):
         def lookup(address, body):
+            # Address is /<resource>/<id>/<item>
+            #   where /<item> may be omitted
             match = re.match(r"(/\w+/\d+)/?(.*)", address)
             if not match:
                 raise error.ConditionError("Bad address {}".format(address))

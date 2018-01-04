@@ -76,6 +76,15 @@ CLI_DEF = {
                 "<rule-id>:Show rule with this id": "show_rule",
             },
         },
+        "schedules:Show the schedules": {
+            "None:Show summary": "show_schedules",
+            "name:Show specific schedule by name": {
+                "<sched-name>:Show schedule with this name": "show_schedule",
+            },
+            "id:Show specific schedule by id": {
+                "<sched-id>:Show schedule with this id": "show_schedule",
+            },
+        },
         "whitelist:Show the whitelist of users": "show_whitelist",
     },
     "light:Perform actions for a light": {
@@ -109,6 +118,13 @@ CLI_DEF = {
     "exit:Exit Huecon": "do_exit",
 }
 
+BANNER = """
+  _   _                ____
+ | | | | _   _   ___  / ___| ___   _ __
+ | |_| || | | | / _ \| |    / _ \ | '_ \\
+ |  _  || |_| ||  __/| |___| (_) || | | |
+ |_| |_| \__,_| \___| \____|\___/ |_| |_|
+"""
 
 def exit_error(message):
     print(message)
@@ -173,7 +189,7 @@ class ObjectNameArg(cli.ArgumentDef):
 
 
 class HueCon(cli.Interface):
-    intro = 'Welcome HueCon.   Type help or ? to list commands.\n'
+    intro = BANNER + '\n\nType help or ? to list commands.\n'
     prompt = '(huecon) '
 
     def __init__(self, bridge_address=None):
@@ -190,6 +206,7 @@ class HueCon(cli.Interface):
                                ("group", None),
                                ("sensor", None),
                                ("rule", None),
+                               ("schedule", "sched"),
                                ("resourcelink", "rlink")):
             if arg_name is None:
                 arg_name = name
@@ -248,7 +265,8 @@ class HueCon(cli.Interface):
         print("  ID:", light.id)
         print("  Reachable:", bool_str(light.is_reachable))
         print("  On:", bool_str(light.is_on))
-        print("  Brightness:", light.state.bri)
+        print("  Brightness: {}%".format(light.state.bri * 100
+                                         / hue.common.MAX_BRIGHTNESS))
         print("  Hue:", light.state.hue)
         print("  Saturation:", light.state.sat)
         print("  Effect:", light.state.effect)
@@ -261,6 +279,7 @@ class HueCon(cli.Interface):
         print("  Last updated: {!s}".format(scene.last_updated))
         print("  Recycle: {}".format(bool_str(scene.recycle)))
         print("  Locked: {}".format(bool_str(scene.locked)))
+        print("  Owner: {}".format(scene.owner))
 
 
     # ------------------------------------------------------------------------
@@ -389,6 +408,27 @@ class HueCon(cli.Interface):
         print("  Actions:")
         for act in rule.actions:
             print("    {!s}".format(act))
+
+    def show_schedules(self, ctx):
+        print("Schedules:")
+        scheds = self.bridge.get_schedules()
+        maxlen = max(len(sched.name) for sched in scheds)
+        for sched in scheds:
+            print("  {:{}}  (id: {}, enabled: {})"
+                  .format(sched.name, maxlen, sched.id,
+                          bool_str(sched.is_enabled)))
+
+    def show_schedule(self, ctx):
+        sched = ctx.args['schedule']
+        print(sched.name)
+        print("  ID: {}".format(sched.id))
+        print("  Enabled: {}".format(bool_str(sched.is_enabled)))
+        print("  Timer time: {!s}".format(sched.timer_time))
+        print("  Created: {!s}".format(sched.created_time))
+        print("  Start time: {!s}".format(sched.start_time))
+        print("  Command:\n    {!s}".format(sched.command_action))
+        print("  Auto-delete: {}".format(sched.auto_delete))
+        print("  Recycle: {}".format(sched.recycle))
 
     def show_whitelist(self, ctx):
         print("User whitelist (ordered by last used):")

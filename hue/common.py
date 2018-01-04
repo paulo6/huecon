@@ -4,6 +4,8 @@
 import datetime
 import enum
 
+MAX_BRIGHTNESS = 254
+
 class Object:
     """
     The base class for all Hue objects.

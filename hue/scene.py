@@ -20,7 +20,7 @@ class Scene(common.Object):
 
     @property
     def last_updated(self):
-        return self._data['lastupdated']
+        return common.Time(self._data['lastupdated'])
 
     @property
     def recycle(self):
@@ -29,3 +29,8 @@ class Scene(common.Object):
     @property
     def locked(self):
         return self._data['locked']
+
+    @property
+    def owner(self):
+        user = self.bridge.get_whitelist().get(self._data['owner'])
+        return "??" if user is None else user.name
