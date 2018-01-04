@@ -1,9 +1,9 @@
 #
 # group.py - Contains Hue 'group' definitions
 #
-from . import object
+from . import common
 
-class Group(object.Object):
+class Group(common.Object):
 
     @property
     def name(self):
@@ -59,7 +59,7 @@ class Group(object.Object):
                       body.get('transitiontime'), body.get('bri_inc'))
 
 
-class Action(object.Action):
+class Action(common.Action):
     def __init__(self, group, is_on=None, scene=None, transition_time=None,
                  bright_inc=None):
         self._group = group

@@ -2,10 +2,10 @@
 # scene.py - Contains Hue 'scene' definitions
 #
 
-from . import object
+from . import common
 
 
-class Scene(object.Object):
+class Scene(common.Object):
     """
     Represents a Hue scene.
 

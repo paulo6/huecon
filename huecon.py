@@ -76,6 +76,7 @@ CLI_DEF = {
                 "<rule-id>:Show rule with this id": "show_rule",
             },
         },
+        "whitelist:Show the whitelist of users": "show_whitelist",
     },
     "light:Perform actions for a light": {
         "id:Perform action for a light id": {
@@ -129,7 +130,7 @@ class ObjectIDArg(cli.ArgumentDef):
         try:
             return objects[arg]
         except KeyError as exc:
-            raise cli.ArgumentError("Unknown {} ID".format(self.name)) from exc
+            raise cli.ArgumentError("Unknown ID".format(self.name)) from exc
 
     def help_options(self, ctx):
         return [(o.id, o.name) for o in self.get_fn()]
@@ -167,7 +168,7 @@ class ObjectNameArg(cli.ArgumentDef):
         try:
             return objects[arg]
         except KeyError as exc:
-            raise cli.ArgumentError("Unknown {} name".format(self.name),
+            raise cli.ArgumentError("Unknown name".format(self.name),
                                     arg) from exc
 
 
@@ -363,7 +364,7 @@ class HueCon(cli.Interface):
         print("  ID: {}".format(sensor.id))
         print("  Type: {}".format(sensor.type_str))
         print("  State: {}".format(sensor.state_str))
-        print("  Last updated: {}".format(sensor.last_updated))
+        print("  Last updated: {!s}".format(sensor.last_updated))
         print("  Recycle: {}".format(bool_str(sensor.recycle)))
 
     def show_rules(self, ctx):
@@ -378,12 +379,25 @@ class HueCon(cli.Interface):
         rule = ctx.args['rule']
         print(rule.name)
         print("  ID: {}".format(rule.id))
+        print("  Status: {}".format(rule.status))
+        print("  Owner: {}".format(rule.owner))
+        print("  Last triggered: {!s}".format(rule.last_triggered))
+        print("  Times triggered: {}".format(rule.times_triggered))
         print("  Conditions:")
         for cond in rule.conditions:
             print("    {!s}".format(cond))
         print("  Actions:")
         for act in rule.actions:
             print("    {!s}".format(act))
+
+    def show_whitelist(self, ctx):
+        print("User whitelist (ordered by last used):")
+        for user in sorted(self.bridge.get_whitelist().values(),
+                           key=lambda u: u.last_used.datetime,
+                           reverse=True):
+            print("  {}".format(user.name))
+            print("    Created: {!s}, Last used: {!s}"
+                  .format(user.created, user.last_used))
 
     def group_on(self, ctx):
         group = ctx.args["group"]

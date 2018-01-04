@@ -4,13 +4,13 @@
 
 from collections import namedtuple
 
-from . import object
+from . import common
 
 
 State = namedtuple("State", ["on", "bri", "hue", "sat", "effect"])
 
 
-class Light(object.Object):
+class Light(common.Object):
     """
     Represents a Hue light.
 

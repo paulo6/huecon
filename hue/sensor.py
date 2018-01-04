@@ -4,7 +4,7 @@
 
 import enum
 
-from . import object
+from . import common
 from . import error
 
 
@@ -45,7 +45,17 @@ class DimmerButtonEvent(enum.Enum):
     OFF_LONG_RELEASED = 4003
 
 
-class Sensor(object.Object):
+class TapButtonEvent(enum.Enum):
+    """
+    Enum of Hue tap button events
+    """
+    BUTTON1 = 34
+    BUTTON2 = 16
+    BUTTON3 = 17
+    BUTTON4 = 18
+
+
+class Sensor(common.Object):
     """
     Represents a Hue sensor.
 
@@ -74,6 +84,8 @@ class Sensor(object.Object):
         value = self._data['state'][self.state_name]
         if self.sensor_type is SensorType.DIMMER_SWITCH:
             value = DimmerButtonEvent(value)
+        elif self.sensor_type is SensorType.TAP_SWITCH:
+            value = TapButtonEvent(value)
         return value
 
     @property
@@ -92,7 +104,7 @@ class Sensor(object.Object):
 
     @property
     def last_updated(self):
-        return self._data['state']['lastupdated']
+        return common.Time(self._data['state']['lastupdated'])
 
     @property
     def recycle(self):
@@ -118,16 +130,33 @@ class ConditionItem(enum.Enum):
     LAST_UPDATED = "state/lastupdated"
 
 
-class Condition(object.Condition):
+class Condition(common.Condition):
     def __init__(self, sensor, item, operator, value):
         self._sensor = sensor
         self._item = item
         self._operator = operator
 
-        if item is ConditionItem.BUTTON_EVENT:
-            self._value = DimmerButtonEvent(int(value))
-        else:
+        if item is ConditionItem.LAST_UPDATED:
             self._value = value
+
+        elif item is ConditionItem.STATUS:
+            self._value = int(value)
+
+        elif item is ConditionItem.BUTTON_EVENT:
+            if sensor.sensor_type is SensorType.DIMMER_SWITCH:
+                self._value = DimmerButtonEvent(int(value))
+            else:
+                self._value = TapButtonEvent(int(value))
+
+        elif item is ConditionItem.DAYLIGHT:
+            if isinstance(value, str):
+                self._value = (value.lower() == "true")
+            else:
+                self._value = bool(value)
+
+        else:
+            raise error.ConditionError("Unknown condition item {!s}"
+                                       .format(item))
 
     @property
     def address(self):
@@ -139,11 +168,15 @@ class Condition(object.Condition):
         return self._operator
 
     @property
-    def value(self):
+    def value_str(self):
         if isinstance(self._value, enum.Enum):
-            return self._value.value
+            return str(self._value.value)
+
+        elif isinstance(self._value, bool):
+            return "true" if self._value else "false"
+
         else:
-            return self._value
+            return str(self._value)
 
     def __str__(self):
         if isinstance(self._value, enum.Enum):
@@ -155,7 +188,7 @@ class Condition(object.Condition):
                                self.operator, val_str)
 
 
-class Action(object.Action):
+class Action(common.Action):
     def __init__(self, sensor, value):
         # Can only have actions for GENERIC_STATUS sensors
         if sensor.sensor_type != SensorType.GENERIC_STATUS:

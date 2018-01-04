@@ -1,7 +1,7 @@
 #
-# object.py - Contains generic representation of Hue objects
+# common.py - Contains common definitions and base object definitions
 #
-
+import datetime
 import enum
 
 class Object:
@@ -58,7 +58,7 @@ class Condition:
         pass
 
     @property
-    def value(self):
+    def value_str(self):
         pass
 
     def __str__(self):
@@ -76,3 +76,17 @@ class Action:
 
     def __str__(self):
         pass
+
+
+class Time:
+    IN_FORMAT = "%Y-%m-%dT%H:%M:%S"
+    OUT_FORMAT = "%d/%m/%Y %H:%M:%S"
+    def __init__(self, time_str):
+        if time_str == "none":
+            self.datetime = None
+        else:
+            self.datetime = datetime.datetime.strptime(time_str, self.IN_FORMAT)
+
+    def __str__(self):
+        return (self.datetime.strftime(self.OUT_FORMAT)
+                if self.datetime is not None else "none")

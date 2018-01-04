@@ -2,9 +2,9 @@
 # resourcelink.py - Contains Hue 'resourcelink' definitions
 #
 
-from . import object
+from . import common
 
-class ResourceLink(object.Object):
+class ResourceLink(common.Object):
     """
     Represents a Hue resourcelink.
 

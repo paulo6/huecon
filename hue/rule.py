@@ -4,11 +4,11 @@
 import re
 import enum
 
-from . import object
+from . import common
 from . import error
 
 
-class Rule(object.Object):
+class Rule(common.Object):
     """
     Represents a Hue rule.
 
@@ -18,6 +18,23 @@ class Rule(object.Object):
         return self._data['name']
 
     @property
+    def status(self):
+        return self._data['status']
+
+    @property
+    def last_triggered(self):
+        return common.Time(self._data['lasttriggered'])
+
+    @property
+    def times_triggered(self):
+        return self._data['timestriggered']
+
+    @property
+    def owner(self):
+        user = self.bridge.get_whitelist().get(self._data['owner'])
+        return "??" if user is None else user.name
+
+    @property
     def conditions(self):
         def lookup(address, op, val):
             match = re.match(r"(/\w+/\d+)/(.*)", address)
@@ -25,7 +42,7 @@ class Rule(object.Object):
                 raise error.ConditionError("Bad address {}".format(address))
             full_id, item_addr = match.groups()
             obj = self.bridge.get_from_full_id(full_id)
-            return obj.parse_condition(item_addr, object.Operator(op), val)
+            return obj.parse_condition(item_addr, common.Operator(op), val)
 
         return [lookup(c["address"], c["operator"],
                        c.get("value")) for c in self._data['conditions']]

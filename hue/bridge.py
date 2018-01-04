@@ -7,6 +7,9 @@ import cachetools
 import operator
 import socket
 
+from collections import namedtuple
+
+from . import common
 from .error import *
 from .light import Light
 from .scene import Scene
@@ -25,7 +28,7 @@ _REGISTER_URL = "http://{address}/api"
 # URL to connect to bridge
 _AUTH_URL = "http://{address}/api/{username}"
 
-# default timeout in seconds
+# Default request timeout in seconds
 _DEFAULT_TIMEOUT = 5
 
 # Cache timeout
@@ -141,7 +144,14 @@ class Bridge:
                                    self.timeout)
 
         # Execute a get on the bridge to check username is ok!
-        self._resource.config()
+        self._get_config()
+
+    def get_whitelist(self):
+        data = self._get_config()['whitelist']
+        return { k: User(v['name'],
+                         common.Time(v['last use date']),
+                         common.Time(v['create date']))
+                 for k, v in data.items() }
 
     def get_lights(self, sort_by_name=True):
         return self._get_objects("lights", sort_by_name)
@@ -202,3 +212,9 @@ class Bridge:
         return self._CLASSES[res_name](self, res_id,
                                        self._resource[res_name][res_id])
 
+    @cachetools.cachedmethod(operator.attrgetter('_cache'))
+    def _get_config(self):
+        return self._resource.config()
+
+
+User = namedtuple("user", ["name", "last_used", "created"])

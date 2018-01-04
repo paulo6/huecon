@@ -1,9 +1,9 @@
 #
 # schedule.py - Contains Hue 'schedule' definitions
 #
-from . import object
+from . import common
 
-class Schedule(object.Object):
+class Schedule(common.Object):
     """
     Represents a Hue schedule.
 
